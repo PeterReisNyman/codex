@@ -74,50 +74,49 @@ Shell and apply‑patch are the two most common tools; others follow similar pat
 ```mermaid
 stateDiagram-v2
     [*] --> SessionConfigured
-    SessionConfigured: Session::new (records user + environment context)
     SessionConfigured --> Idle
 
-    Idle --> RunningTask: Op::UserInput / Op::UserTurn
-    Idle --> Idle: Other ops (ListMcpTools, GetHistory, etc.)
+    Idle --> RunningTask: UserInput/UserTurn
+    Idle --> Idle: Other ops
 
     state RunningTask {
       [*] --> TurnStart
-      TurnStart: Build tools + prompt from history
-      TurnStart --> Streaming: ModelClient.stream(prompt)
+      TurnStart --> Streaming: build prompt + tools
 
       state Streaming {
         [*] --> Receiving
-        Receiving --> Receiving: OutputTextDelta / ReasoningDelta
-        Receiving --> ItemReady: OutputItemDone(ResponseItem)
-        ItemReady --> Executing: if ResponseItem is a tool call
-        ItemReady --> Recording: if ResponseItem is a message/reasoning
+        Receiving --> Receiving: text/reasoning deltas
+        Receiving --> ItemReady: output_item.done
+        ItemReady --> Executing: tool call
+        ItemReady --> Recording: message/reasoning
         Recording --> Receiving
 
         state Executing {
           [*] --> SafetyGate
-          SafetyGate --> Approved: Auto‑approve
-          SafetyGate --> AskUser: Approval requested
-          AskUser --> Approved: User approves
-          AskUser --> Failed: Deny/Abort
-          SafetyGate --> Rejected: Reject
-          Approved --> Exec: Sandbox/unsandbox per policy
+          SafetyGate --> Approved
+          SafetyGate --> AskUser
+          SafetyGate --> Rejected
+          AskUser --> Approved: approved
+          AskUser --> Failed: denied/abort
+          Approved --> Exec
           Exec --> ExecDone
           Failed --> ExecDone
           Rejected --> ExecDone
-          ExecDone --> Receiving: enqueue FunctionCallOutput for next turn
+          ExecDone --> Receiving
         }
 
         Receiving --> Completed: response.completed
       }
 
-      Completed --> NextTurn?: any pending ResponseInputItem?
-      NextTurn? --> TurnStart: yes (feed outputs as next input)
-      NextTurn? --> Done: no
+      state NextTurn <<choice>>
+      Completed --> NextTurn
+      NextTurn --> TurnStart: pending outputs
+      NextTurn --> Done: none
       Done --> [*]
     }
 
-    RunningTask --> Idle: TaskComplete (last_agent_message?)
-    RunningTask --> Idle: Interrupt (TurnAborted)
+    RunningTask --> Idle: TaskComplete
+    RunningTask --> Idle: Interrupt
 ```
 
 ## Event Timeline per Turn (typical)
