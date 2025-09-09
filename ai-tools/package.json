@@ -1,0 +1,20 @@
+{
+  "name": "@codex/ai-tools",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "lint": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "lint:fix": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  }
+}
